@@ -10,7 +10,7 @@ OHDL is a C-style language:
 * Whitespace is only needed to separate identifiers. It is otherwise ignored, and the amount of whitespace used is irrelevant.
 * Order of operations can be made explicit with parentheses
 * Functions are called with the standard parenthesis syntax.
-* Comments are // for single lines and /* */ for blocks.
+* Comments are `//` for single lines and `/* */` for blocks.
 
 ## Function definitions
 ```
@@ -81,7 +81,6 @@ default:
 
 ## Bit
 OHDL, like other similar languages, has an ultimate root value type, bit. A bit is a single digital wire that can take a value of `0` or `1`. Multiple bits in an array can represent a greater range of numbers.
-The bit type is implied if type information is omitted in any statement, including array definitions.
 
 ## Tri
 The tri type can take one of three values: `0`, `1` or `X`, with `X` being high impedance. The reason for the distinction between tri and bit is for type safety; with bit you can be assured that your signal has a definite value. Converting between the two types is very simple; bit can be converted to tri freely, but to convert tri to bit requires either an explicit cast, or use of the `Pullup` or `Pulldown` properties, which will convert `X` values to `1` and `0` respectively. Using a cast is equivalent to using `Pulldown`.
@@ -95,25 +94,25 @@ var b3 = myTri.Pulldown; // b3 = 0b00110000;
 var b4 = myTri.Pullup;   // b4 = 0b00111111;
 ```
 
-Note: OHDL does not have separate values for high impedance, unknown values, unset values or weak signals, as these are the same value for all practical purposes and could be interpreted differently by synthesisers.
+OHDL does not have separate values for high impedance, unknown values, unset values or weak signals, as these are the same value for all practical purposes and could be interpreted differently by synthesisers.
 
 ## Arrays
-Multiple values of the same type can be defined with the familiar array syntax, in either pre or postfix forms; both have the same function, though the postfix form only applies to a single variable on the line, while the prefix one applies to the whole line. Array elements are accessed, again, with the familiar indexer syntax, and can have their net taken as well.
-Uniquely to OHDL, rather than allowing for specific indexer patterns to indicate endianness, the ‘end’ of the array depends on the position of the indexer operator. If it is before the identifier, the index is taken from the end of the array rather than the beginning.
+Multiple values of the same type can be defined with the familiar array syntax, by appending the length of the array surrounded by square brackets to the type. Note that the postfix syntax found in Verilog or C is not supported. Array elements are accessed, again, with the familiar indexer syntax, and can have their net taken as well.
+
+To specify endianness, simply change the position of the indexer operator. If it is before the identifier, the index is taken from the end of the array rather than the beginning.
 
 ```
 bit[8] myByte;
-secondByte[8];  // This has the same effect
-                // Note however:
-bit[8] a, b;    // Both a and b are arrays
-bit c[8], d;    // c is an array, d is a single bit
 
 myByte[0] = 1;  // This sets bit 0 of myByte to be permanently 1
 [1]myByte = 0;  // This sets bit 7 - 1 = 6 of myByte to be permanently 0
 ```
 
+*TODO: Slice operator*
+
 Arrays can be created with (and represented by) a ‘collection initializer’, in the C style, as shown below. They can be ‘spliced’, selecting a range of elements and returning an array of the length selected, by specifying the start and end element in the indexer, separated by a colon. They can also be reversed by prepending ‘[]’ to the variable, which returns the same type as it accepts, net or value.
-Note: Reversing, for example, a byte array will reverse the byte order, not the bit order. Casting to a bit array first causes a full bitwise reversal.
+
+Note that reversing, for example, a byte array will reverse the byte order, not the bit order. Casting to a bit array first causes a full bitwise reversal.
 
 ```
 bit[] myByte = { 0, 1, 0, 0, 1, 1, 0, 1 }; 
@@ -124,7 +123,8 @@ bit[] splice = myByte[1:4];    // splice = { 1, 0, 0, 1 }
 ```
 
 Note that in these cases, the length of the array is omitted in the definition, because it is initialized on the same line, which gives the compiler the same information.
-When the index of an array is taken, a constant or variable argument can be used. Constant indices can be used anywhere and as many times as needed, since it is just a single wire. For variable indices, however, there can only be one calling point, since a multiplexer needs to be synthesised. This restriction can be lifted by applying the inline keyword.
+
+When the index of an array is taken, a constant or variable argument can be used. Constant indices are essentially free, but variable indices will use an additional multiplexer.
 
 ## Boolean type
 A boolean value can be declared with the ‘bool’ keyword, and is physically identical to a single bit in registers or nets. However, the way they are compared with other numbers is quite different. A number is equal to true when it is non-zero, and false otherwise. This comparison can be disabled by casting explicitly to bit.
@@ -138,7 +138,7 @@ bool b2 = (0b10100110 == (bit)myBool);   // b2 = false
 ## Signedness and representation
 Values are presumed unsigned by default, but the signed and unsigned keywords can be prefixed to change this. When casting an unsigned value to a signed value, the its width must be increased by 1 to allow room for the sign bit. Signed values will also have their sign bit extended when cast to a higher width type.
 
-Note: All values in OHDL are little-endian, so the value of the bit at index i is 2^i. This also simplifies casting logic.
+All values in OHDL are little-endian, so the value of the bit at index i is 2^i. This also simplifies casting logic.
 
 ## Real numbers
 Fixed-point real numbers are supported. The fixed type is parameterised for the number of integer bits, and the number of fractional bits, to allow for greater precision and range as required, while being able to add and subtract normally.
@@ -149,7 +149,8 @@ signed fixed<4, 4> bar; // Range: -8 to 7.9375, precision 0.0625
 ```
 
 Floating-point numbers are also supported with the float type. By default it implements the IEEE-754 binary32 format with 8 exponent bits and 23 mantissa bits, but a templated form also exists that can accept arbitrary widths for both parameters.
-Note: Floating-point operations are available, and yes, they are expensive. One can, of course, derive from these built-in types and override their operators with an external FPU, multi-cycle steps etc.
+
+Floating-point operations are available, but are normally quite expensive. One can, of course, derive from these built-in types and override their operators with an external FPU, multi-cycle steps etc.
 
 ## Casting
 In general, casting a value to a type with a similar/higher range and a similar/higher precision does not require a cast, because no data can be lost. For example, casting `short` to `int`, or `fixed<4, 4>` to `fixed<8, 8>`. If this is not the case, some data could be lost, or the real representation of the number could change, so the casts must be explicit. When casting, fixed type numbers are shifted appropriately, and signed numbers have their sign bit extended.
@@ -159,7 +160,7 @@ sbyte foo = -10; // 0b11110110
 short bar = foo; // bar is -10, or 0b11111111_11110110
 ```
 
-In addition, it is sometimes useful to transform a number to its bitwise equivalent in another type, ignoring any conversion logic. For this, the raw keyword is provided, and can be prefixed to the casting type. Raw casts will discard any excess input bits (the first/lower ones taking priority), and fill any remaining ones with zeroes. Casts between signed and unsigned types are not affected either way.
+In addition, it is sometimes useful to transform a number to its bitwise equivalent in another type, ignoring any conversion logic. For this, the raw keyword is provided, and can be prefixed to the casting type. Raw casts will discard any excess input bits (the first/lower ones taking priority), and fill any remaining places with zeroes.
 
 ```
 fixed<4, 4> foo = 10.5;
@@ -170,35 +171,35 @@ short bat = (raw short) foo; // bat is now 0b00000000_10101000 = 168
 
 ## Type aliases
 
-Types can be aliased with one form of the ‘using’ directive, and are scoped to the current file.
+Types can be aliased with one form of the `using` directive, and are scoped to the current file.
 
 ```
-using MyType = bit[32];  // This is based on C# syntax
+using MyType = bit[32];
 ```
 
-Some (global) type aliases exist in the language by default:
+Some global type aliases exist in the language by default:
 
 ```
-	byte		OHDL.UInt8 : unsigned bit[8]
-	char		OHDL.Char : unsigned bit[8]
-	wchar		OHDL.WChar : unsigned bit[16]
-	sbyte		OHDL.Int8 : signed bit[8]
-	short		OHDL.Int16 : signed bit[16]
-	ushort		OHDL.UInt16 : unsigned bit[16]
-	int		OHDL.Int32 : signed bit[32]
-	uint		OHDL.UInt32 : unsigned bit[32]
-	long		OHDL.Int64 : signed bit[64]
-	ulong		OHDL.UInt64 : unsigned bit[64]
-	fixed<I, F>	OHDL.Fixed<I, F>
-	fixed		OHDL.Fixed32 : fixed<16, 16>
-	float<E, M>	OHDL.Float<E, M>
-	half		OHDL.Float16 : float<5, 10>
-	float		OHDL.Float32 : float<8, 23>
-	double		OHDL.Float64 : float<11, 52>
-	quad		OHDL.Float128 : float<15, 112>
+	byte		Sys.UInt8 : unsigned bit[8]
+	char		Sys.Char : unsigned bit[8]
+	wchar		Sys.WChar : unsigned bit[16]
+	sbyte		Sys.Int8 : signed bit[8]
+	short		Sys.Int16 : signed bit[16]
+	ushort		Sys.UInt16 : unsigned bit[16]
+	int		Sys.Int32 : signed bit[32]
+	uint		Sys.UInt32 : unsigned bit[32]
+	long		Sys.Int64 : signed bit[64]
+	ulong		Sys.UInt64 : unsigned bit[64]
+	fixed<I, F>	Sys.Fixed<I, F>
+	fixed		Sys.Fixed32 : fixed<16, 16>
+	float<E, M>	Sys.Float<E, M>
+	half		Sys.Float16 : float<5, 10>
+	float		Sys.Float32 : float<8, 23>
+	double		Sys.Float64 : float<11, 52>
+	quad		Sys.Float128 : float<15, 112>
 ```
 
-Since these are keywords, they cannot be class or variable names. However, they can be ‘overridden’ by an explicit using statement, which is scoped at a maximum to the current file.
+These type names can be ‘overridden’ by an explicit using statement, which is scoped at a maximum to the current file.
 
 # Literals
 
@@ -217,9 +218,12 @@ OHDL has a number of forms for literals:
 | `true`                 | Boolean true           | BOOL           |
 | `false`                | Boolean false          | BOOL           |
 
-Note the underscores in the examples, which can be used in the binary, octal or hexadecimal patterns (collectively known as bit-pattern literals) as separators. They can be used as many times as is needed after the ‘c’, ‘b’ or ‘x’ in the literal, and are ignored by the synthesiser.
+Note the underscores in the examples, which can be used in the binary, octal or hexadecimal patterns (collectively known as bit-pattern literals) as separators. They can be used as many times as is needed after the `c`, `b` or `x` in the literal, and are ignored by the synthesiser.
+
+To avoid confusion, C-style octal literals e.g. `01234` are explicitly disallowed.
 
 Whenever a literal is used in code, it is coerced into whatever type is expected at that point to ensure that the representation of the value is consistent with what is given. For bit-pattern literals, their representation is just that, so the only change that is made is to zero-pad the number if necessary. The same is true for strings. For signed decimal numbers, this changes slightly as to keep representation, the number must be sign-extended if it is negative. Real numbers are synthesised as their closest binary approximation for that type, though a warning will be shown if any precision is being lost.
+
 In the case where a value is entirely out of range for that type, or the assignment is nonsensical (e.g. string to integer) an error occurs. Explicit casts can be used in this case to force the value to be accepted.
 
 One important point is that only decimal literals can be negated without a cast. This is because the hex, octal and binary forms should represent the exact bit pattern, and the result of a negation is therefore undefined. You should cast to a signed type and then perform the negation in these circumstances (it will still be a constant literal). Note that the negation is performed as if the literal were of the type it has been cast to, so if the width is different from the target type, the result may not be as expected:
@@ -242,18 +246,22 @@ Consider the following examples:
 ```
 async void Method1()
 {
-   for(INT i = 0; i < 5; i++)
+    for(INT i = 0; i < 5; i++) {
+        print("Foo"); // Evaluated at compile time
         on (clk);
+    }
 }
 
 async void Method2()
 {
-    for(int i  = 0; i < 5; i++)
+    for(int i  = 0; i < 5; i++) {
+        print("Foo");
         on (clk);
+    }
 }
 ```
 
-How do Method1 and Method2 differ? In Method1, the body of the loop is synthesised 5 times in a row. In Method2, ‘i’ is a real register that changes its value on each iteration. Now consider these examples:
+Both methods behave identically, but for `Method1`, 'foo' is printed 5 times, but for `Method2` it is printed only once. Now consider these examples:
 
 ```
 int count;
@@ -266,12 +274,12 @@ edge void Method3()
 
 edge void Method4()
 {
-    //for(int i = 0; i < 5; i++) // This will cause a compiler error
-    //    count++;
+    for(int i = 0; i < 5; i++) // This will cause a compiler error
+        count++;
 }
 ```
 
-In any block that occurs in a single cycle, including all combinatorial and edge-triggered methods, the number of loop iterations must be determinable, which means the iterators must use only meta-data. Method4 will therefore fail to compile.
+In any block that occurs in a single cycle, including all combinatorial and edge-triggered methods, the number of loop iterations must be determinable, which means the iterators must use only meta-data. `Method4` will therefore fail to compile.
 
 ## BOOL
 A boolean value, returned by any comparison between two meta-types. Can be compared as per the normal boolean comparisons.
@@ -280,7 +288,7 @@ A boolean value, returned by any comparison between two meta-types. Can be compa
 A number that can have a fractional component. Floats cannot be used for indexing, but they can be compared with and used as literals.
 
 ## STRING
-A string of characters, used for compiler and debug output. They can have other metadata concatenated to them with the ‘+’ operator. They can also use the ‘$’ symbol to have other variables embedded in them.
+A string of characters, used for compiler and debug output. They can have other metadata concatenated to them with the `+` operator. They can also use the `$` symbol to have other variables embedded in them.
 
 ```
 INT i = 5;
@@ -291,10 +299,10 @@ print("This is a string: $s");         // This is a string: a string
 print("This is a dollar sign: $$");    // This is a dollar sign: $
 ```
 
-Data concatenated with ‘+’ is evaluated once and saved as a string. Strings with embedded values, as shown above, are evaluated each time as necessary.
+Data concatenated with `+` is evaluated once and saved as a string. Strings with embedded values, as shown above, are evaluated each time as necessary.
 
 ## TYPE
-A type name, generally used in templated classes, but can also be compared for equality with `==` and `!=`, or for inheritance with `->`.
+A type name, generally used in templated classes, but can also be compared for equality with `==` and `!=`, or for inheritance with `is`.
 
 ```
 module Example0 { }
@@ -302,9 +310,9 @@ module Example1 { }
 module Example2 : Example1 { }
 module Example3 : Example2, Example0 { }
 
-print(Example2 -> Example1);   // true
-print(Example2 -> Example0);   // false
-print(Example3 -> Example1);   // true
+print(Example2 is Example1);   // true
+print(Example2 is Example0);   // false
+print(Example3 is Example1);   // true
 ```
 
 # Signal representation
@@ -315,7 +323,7 @@ OHDL is explicit in how wires are connected in the system and what logic primiti
 By default, all fields are synthesised as registers, however by prefixing the definition with `&` one can define a 'net' or 'reference' that represents a connection to a value of that type, so no registers are placed at all. Local variables and parameters are nets by default, but one can prefix method arguments with reg to indicate that the argument is latched in. All nets must be assigned a value at some point in code, and can only be assigned once.
 
 ## Tristates
-By applying the tri keyword to a register or net type (only value types, not modules), one can synthesise a tristate buffer or register. A tristate register can be assigned the X value, whereas a tristate buffer has 3 nets: Input, Output and Enable. When the specific net is omitted during assignment, the compiler will use Input and Output appropriately depending on which side of the operator the tristate is on.
+By applying the tri keyword to a register or net type (only value types, not modules), one can synthesise a tristate buffer or register. A tristate register can be assigned the `X` value, whereas a tristate buffer has 3 nets: Input, Output and Enable. When the specific net is omitted during assignment, the compiler will use Input and Output appropriately depending on which side of the operator the tristate is on.
 
 ```
 module TristateExample
@@ -338,16 +346,17 @@ module TristateExample
 ```
 
 ## Input and output
-All fields, arguments etc. are normally inputted values, unless a register is synthesised (in which case the register is used directly). Prefixing the definitions with ‘out’ will define output nets as necessary, but these are generally only useful for certain splicing operations; use properties for anything complex. One can use an explicit ‘in’ for nets as well.
+All fields, arguments etc. are normally inputted values, unless a register is synthesised (in which case the register is used directly). Prefixing the definitions with `out` will define output nets as necessary, which can be assigned an expression. One can use an explicit `in` for nets as well.
 
 ## Bidirectional nets
-Direct access to bidirectional ports is generally a bad idea, as it is easily possible to create power-ground shorts. To accommodate external bidirectional ports, OHDL provides the `OHDL.IOPort` module which allows safe reading and writing to a single port using tristate drivers. 
+Direct access to bidirectional ports is generally a bad idea, as it is easily possible to create power-ground shorts. To accommodate external bidirectional ports, OHDL provides the `Sys.IoPort` module which allows safe reading and writing to a single port using tristate drivers. 
 
 However, to give the programmer absolute control, raw bidirectional nets can be defined with the `unsafe` keyword. These nets are can have either a single bit driver, or any number of tri drivers.
-Note: Having more than one bit driver will definitely cause a power-ground short, so it is explicitly forbidden.
+
+Having more than one bit driver will definitely cause a power-ground short, so it is explicitly forbidden.
 
 ## Register pointers
-By prefixing a definition with `&reg`, one defines a ‘register pointer’, which is compiled as read and write buses and a clock input. This configuration allows data to be both read from and written to an external register. They can also be converted to normal nets which point to the ‘read’ bus.
+By prefixing a definition with `&reg`, one defines a ‘register pointer’, which is compiled as read and write buses and a clock input. This configuration allows data to be both read from and written to an external register. They can also be converted to normal nets which point to the `Read` property.
 
 Note that to set the value of the register pointed to by the pointer, we use the standard dereference operator, `*`.
 
@@ -426,13 +435,13 @@ Modules and structs - collectively referred to as ‘classes’ for simplicity -
 ## Access modifiers
 Like other object-oriented languages, OHDL includes a number of access modifier keywords. The default visibility for members is `private`, and for modules it is `internal`. Modifier keywords are applied to each member individually, like Java and C#, and unlike C++.
 
-```
-	private	Visible only to the containing module.
-		protected	Visible to the containing module and modules derived from it
-	internal	Visible to the current file
-	public	Visible everywhere
-		protected internal	Additive combination of protected and internal
-```
+| Name | Description |
+|---|---|
+|`private`           | Visible only to the containing module. |
+|`protected`         | Visible to the containing module and modules derived from it |
+|`internal`          | Visible to the current file |
+|`public`	     | Visible everywhere |
+|`protected internal`| Additive combination of `protected` and `internal` |
 
 ## Fields
 A field is a named item of data that is normally unique to each instance of a module. A field can be of any data type: registers, nets, primitive types, modules or module references. Fields are defined by their access modifiers, their full data type, followed by an identifier and a semicolon.
@@ -452,6 +461,8 @@ public struct CommandBus
     uint imm;
 }
 ```
+
+*TODO: `reg` is explicit, net is default. Explicit expression assignment operator `=>`*
 
 ## Constructors
 Constructors are used to initialize module instances. They have a similar syntax to methods, but can only take references and meta-types as parameters. Only in constructors can references be assigned to external inputs and outputs.
@@ -509,7 +520,6 @@ int Output
 A property address can be used as a full register pointer if it has both accessors (since the wires are identical), and to a normal net for the property type if it has at least the get accessor. Since property setters require an edge, they must be declared inline if they are to have multiple calling points.
 
 # Indexers
-Indexers have similar syntax to properties
 
 # Methods
 A method represents a clocked action on a particular module. They can take a number of arguments of any type, which are nets by default, though both input and output nets are allowed. They can also return a value. There are four main categories of methods:
@@ -566,6 +576,8 @@ Edge methods can have the clocks keyword applied to them to allow multiple calli
 The ‘asynchronous’ designation and keyword ‘async’ don’t refer to a lack of clocking - they are very much edge-triggered - but instead mean that these methods can take an arbitrary amount of time from when they are first called to when they return - if they ever return. The term is taken from software languages that start separate threads for these methods, and the analogy is reasonably accurate here.
 
 Async methods can include delays (not fixed time delays, but delays until a clock edge) in their body. Their arguments, unlike other methods, are latched in by default, though a reference can be defined as well.
+
+*TODO: automatically determine number of cycles from platform and frequency*
 
 ## Local variables
 Methods can define local variables, which are synthesised as nets or registers depending on the method type (nets for combinatorial and edge-triggered, registers for async).
@@ -655,8 +667,8 @@ module Counter2
     public &reset;
     int count;
     
-    public out Count = { return count; }
-    event Increment on(clk -> 1) = { count = reset ? 0 : count + 1; }
+    public out Count => count;
+    event Increment on(clk -> 1) => { count = reset ? 0 : count + 1; }
 }
 
 module Counter3
@@ -664,8 +676,8 @@ module Counter3
     public & clk, reset;
     int count;
     
-    public out Count = count;
-    on(clk -> 1) reset ? count = 0 : count++;
+    public out Count => count;
+    on(clk -> 1) => reset ? count = 0 : count++;
 }
 ```
 
@@ -682,18 +694,17 @@ interface ICollection<T>
 {
     int Count { get; }
     T this[int i] { get; set; }
-    foreach(T item in int start, end);
 }
 ```
 
 # Events
-An event defines the entry points to the code - the moment when your actions are executed. A single entry point can be defined with the on keyword. What follows is a combination of applicable states defining the clock that causes the action to take place. OHDL uses ‘->’ in this sense to mean ‘becomes’, and allows logical operators to combine multiple expressions (or, in fact, any combinatorial expression).
+An event defines the entry points to the code - the moment when your actions are executed. A single entry point can be defined with the on keyword. What follows is a combination of applicable states defining the clock that causes the action to take place. OHDL uses `->` in this sense to mean ‘becomes’, and allows logical operators to combine multiple expressions (or, in fact, any combinatorial expression).
 
 ```
 public &clk;
 int a;
 
-on (clk -> 1) a++;
+on (clk -> 1) => a++;
 ```
 
 We can also define named events which can have methods added to them at other points in the code. Events can either be called explicitly, or can have ‘on’ expressions in their declaration.
@@ -709,7 +720,7 @@ Increment += { a++ };
 The transition state can be any value appropriate for the variable type. The operator can also be omitted completely omitted, which will synthesise differently depending on whether the ddr keyword is present, as shown below.
 
 ```
-using OHDL.Gates;
+using Sys.Gates; // This library defines macros to perform operations on all elements of an array
 &bit[8] clk;
 
 event NormalEvent on (clk);   // Equivalent to (OR(clk) -> 1)
@@ -717,7 +728,7 @@ ddr event DDREvent on (clk);   // Equivalent to (OR(clk) -> 1 or OR(clk) -> 0)
 ```
 
 ## Multiple clocks
-Clock events can be combined in a single statement using the ‘or’ keyword. Consider the following two snippets:
+Clock events can be combined in a single statement using the `or` keyword. Consider the following two snippets:
 
 ```
 public & clk1, clk2;
@@ -726,6 +737,8 @@ inline int a, b;
 on (clk1 | clk2 -> 1) a++;
 on (clk1 -> 1 or clk2 -> 1) b++;
 ```
+
+*TODO: Signal diagram here. A goes from 0 to 1, followed by B*
 
 These signals cause `a` to increment by 1, and `b` to increment by 2, because the former uses combinational logic to combine the clocks, whereas the latter uses dual-clocked logic. Be aware of the extra area and (small) delay caused by using multi-clocked registers.
 
@@ -782,8 +795,9 @@ Whether a reference is null or not is compiled statically, so any time such a re
 # Input and output
 
 ## Extern and export
-The extern and export keywords can be applied to any module field to mean ‘input’ and ‘output’ respectively (extern out has the same effect as export for nets). The usual pattern is to define a single static module with all the external nets as the ‘entry point’ for the overall program, but external nets can be added to module instances too, and in multiple locations.
+The `extern` keyword is used to expose nets to the outside world; to the physical pins of the device or other modules. As with normal nets, the `in`, `out` and `unsafe` keywords can be applied to change the type. The usual pattern is to define a single static module with all the external nets as the ‘entry point’ for the overall program, but external nets can be added to module instances too, and in multiple locations.
 
 External nets have some restrictions when compared with normal nets:
-They cannot be nullable; they must always, by nature, have a value
-All methods and registers for that reference are implicitly local and singly-clocked (or DDR, if the member is defined as such)
+
+* They cannot be nullable; they must always, by nature, have a value
+* All methods and registers for that reference are implicitly local and singly-clocked (or DDR, if the member is defined as such)
