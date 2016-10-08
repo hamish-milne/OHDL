@@ -1,0 +1,37 @@
+
+enum Opcode
+{
+    Add,
+    Sub,
+    Mul,
+    Div
+}
+
+module Main {
+
+    int Operation(Opcode opcode, int a, int b, out bool success)
+    {
+        success => true;
+        switch(opcode) {
+            case Add:
+                return a + b;
+            case Sub:
+                return a - b;
+            case Mul:
+                return a * b;
+            case Div:
+                return a / b;
+            default:
+                success => false;
+                return 0;
+        }
+    }
+    
+    public Opcode Opcode;
+    public bit Clk;
+    public int A, B;
+    public bool Success { get; private set; }
+    public int Output { get; private set; }
+    
+    event (clk) => Output = Operation(Opcode, A, B, out Success);
+}
