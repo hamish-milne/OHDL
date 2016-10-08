@@ -1,86 +1,30 @@
-# Object-oriented Hardware Description Language
-A modular, efficient HDL that combines object-oriented principles with strong, explicit hardware description
+# Background
 
-* Introduction
-* Basic concepts
-  * Style
-  * Function definitions
-  * Conditional statement
-  * While loop
-  * For loop
-  * Switch statement
- * Data types
-  * Bit
-  * Arrays
-  * Signedness and representation
-  * Real numbers
-  * Casting
-  * Type aliases
-* Literals
-* Boolean type
-* Meta types
-  * INT
-  * BOOL
-  * FLOAT
-  * STRING
-  * TYPE
-* Signal representation
-  * Nets
-  * Tristates
-  * Input and output
-  * Bidirectional nets
-  * Register pointers
-  * Writeable nets
-* Operators
-  * Comparison with X
-  * Multi-clock registers
-  * Length and width
-  * Structs and Modules
-  * Access modifiers
-  * Fields
-  * Constructors
-  * Nested modules and references
-  * Static members
-* Properties
-* Indexers
-* Methods
-  * Combinatorial
-  * Macros
-  * Edge triggered
-  * Asynchronous
-  * Local variables
-  * Parallel assignment
-  * Inline and local methods
-* Anonymous members
-  * Function pointers
-* Interfaces
-* Events
-  * Multiple clocks
-* Errors and warnings
-* Reset method
-* Nullable references
-* Operator overloading
-* Iterators
-* Templates
-* Input and output
-  * Extern and export
-* Safety
+To develop for ASIC or FPGA platforms there are, broadly speaking, two options: code in a low-level HDL which is passed directly to the platform-specific synthesiser--essentially Verilog or VHDL--or use a High-Level Synthesis tool such as LegUp or Vivado to translate C/C++ into one of these languages. While the latter is ideal for implementing existing sequential algorithms in hardware or allowing software developers to work with these platforms with little additional training, they suffer from the drawbacks that typically arise from using a language far removed from the bare metal: long compile times, decreased performance, and difficulty in debugging the compiled code.
 
-# Introduction
-The goal of OHDL is to create a language with no compromises in either ease of use, or exact  description of digital logic (and therefore performance). Other languages, such as Verilog, accomplish this to some extent, but, in my opinion, are neither strong, precise descriptors of the hardware being synthesised, nor allow the programmer to think fully in the abstract ‘block level’ by introducing small elaborations and traps that require intimate knowledge of the language. OHDL attempts to eliminate both these problems simultaneously, while also introducing extra features to make digital design as intuitive as possible, and easing collaboration on large projects.
+As a result, many hardware developers choose to, or are required to, eschew HLS and code directly in a low-level language. In the software world this would be like being unable to code in Prolog, so deciding to use C or BASIC. My goal is to create a third option, a high-level hardware description language that gives the programmer as much control as Verilog or VHDL, while providing features and abstractions that are typically found only in HLS.
 
-It should also be noted that OHDL should not be categorized as a High Level Synthesis language. While it is high level, it can be just as close to the hardware as any other HDL, and compiling to a more widely-supported language is a quick and relatively painless process.
+My goals for the language are:
 
-The OHDL specification adheres to the following principles:
+* That any non-trivial program written in Verilog or VHDL can be expressed in the same or fewer lines, in almost all cases
+* That any non-trivial program written for HLS can be expressed with minimal extra effort and reduced area cost, in most cases
+* That, for a given task, an engineer with basic understanding of all three systems will be able to complete it in the new language as fast as in HLS, and faster than Verilog/VHDL
+* That a pure software engineer can gain familiarity with digital design using the new language as quickly as with HLS, and quicker than Verilog/VHDL
+* That the use of the new language has minimal impact on the overall compile time
 
-* No repetition. No definitions or code will need to be repeated in order to maintain performance, area limits or readability.
-* Area limits. Each module defines the maximum area cost for each instance, in terms of direct member access.
-* Extensibility. Except where forbidden by the module, all data structures can be extended and modified by subsequent code where necessary.
-* Control. Except where explicitly forbidden by a module, the programmer will always have absolute control over the signals they have access to.
-* Functionality. Operations in the language are only disallowed when they conflict with another language element, or their result is unpredictable. No tasks will be deliberately made more difficult to discourage certain styles.
-* Predictability. OHDL code will - given appropriate compiler options - function and perform identically regardless of platform.
+I plan to accomplish this by:
 
-Object orientation translates rather well into the hardware space. Many languages already allow the definition of a single module structure with multiple instances. OHDL goes further by adding composition - a simple matter of joining multiple modules into a single one; inheritance - by having the same set of wires, but different functionality at the other end; and language features like access modifiers and generics.
+* Implementing object-oriented functionality, a paradigm which is familiar to software engineers, and closely relates to the module structure of most digital designs
+* Adding additional zero-cost abstractions such as generics
+* The ability to easily switch between different modes of operation: combinatorial, edge-triggered, and multi-cycle
+* Including as little boilerplate as possible
+* Compiling to Verilog and/or VHDL, which should be relatively fast and integrates neatly into the environment of whatever platform is being used.
+
+Throughout this project I will be asking myself and others what they like about some languages, what they dislike about others, and what would influence their decision to use one language over another
+
+## Introducing OHDL - Object-Oriented Hardware Description Language
+
+This is an idea I had a while back, but never got around to anything more than an initial specification. It's the answer to the question "What if C# was a HDL?". What follows is the aforementioned spec, which gives an idea of my thoughts at the time, but of course it's all subject to change.
 
 # Basic concepts
 OHDL includes many common language elements, which are briefly listed here for clarity:
@@ -865,7 +809,7 @@ Whether a reference is null or not is compiled statically, so any time such a re
 
 # Input and output
 
-##Extern and export
+## Extern and export
 The extern and export keywords can be applied to any module field to mean ‘input’ and ‘output’ respectively (extern out has the same effect as export for nets). The usual pattern is to define a single static module with all the external nets as the ‘entry point’ for the overall program, but external nets can be added to module instances too, and in multiple locations.
 
 External nets have some restrictions when compared with normal nets:
