@@ -1,5 +1,6 @@
 
-enum Opcode
+enum Opcode // Enumerations will compile to the smallest type that supports all values
+// In this case, UInt<2>
 {
     Add,
     Sub,
@@ -7,19 +8,21 @@ enum Opcode
     Div
 }
 
-module Main {
+module Main { // The 'Main' module is the code's entry point
 
+    // 'out' parameters allow us to return multiple values
+    // This method is combinatorial as it has no additional keywords
     int Operation(Opcode opcode, int a, int b, out bool success)
     {
-        success => true;
+        success => true; // `out` parameters must always have a value on return
         switch(opcode) {
-            case Add:
+            case Opcode.Add: // We can use 'using static' to import enum members
                 return a + b;
-            case Sub:
+            case Opcode.Sub:
                 return a - b;
-            case Mul:
+            case Opcode.Mul:
                 return a * b;
-            case Div:
+            case Opcode.Div:
                 return a / b;
             default:
                 success => false;
@@ -27,11 +30,13 @@ module Main {
         }
     }
     
+    // Public fields will be exported. Fields are input by default
     public Opcode Opcode;
     public bit Clk;
     public int A, B;
+    // Auto-properties synthesise a register internally
     public bool Success { get; private set; }
     public int Output { get; private set; }
     
-    event (clk) => Output = Operation(Opcode, A, B, out Success);
+    event on(clk) => Output = Operation(Opcode, A, B, out Success);
 }
