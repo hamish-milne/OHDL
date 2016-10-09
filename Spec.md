@@ -483,9 +483,9 @@ MyModule(3, 4, myOutput);  // Anonymous member - warning if there are no outputs
 ```
 
 ## Nested modules and references
-There are two ways to include a module in another module: an embedded field, and a reference. In the former case, the module name is used as the field’s type with no prefix. This creates an embedded instance in every instance of the containing module, and additional logic is synthesised. Alternatively, a reference can be defined by prefixing the type name with ‘&’, which creates the necessary input and output wires to access the public members of the given module.
+There are two ways to include a module in another module: an embedded field, and a reference. To embed the module, use the `reg` keyword; to merely reference it, simply omit it.
 
-Note: Module references are language features; the number of physical wires defined is dependant on what module members are used and in what way, so as such they cannot be converted to bit arrays. Switching module references is supported, however; the compiler will work out what wires need to be assigned where.
+Module references are language features; the number of physical wires defined is dependant on what module members are used and in what way, so as such they cannot be converted to bit arrays. Switching module references is supported, however; the compiler will work out what wires need to be assigned where.
 
 Module references can be freely assigned to local variables, and used as return types. The necessary multiplexers are synthesised automatically.
 
@@ -500,6 +500,8 @@ A property is a set of logic defined like one or two methods, but accessed like 
 ```
 int a, b, c;
 
+// Read-only properties differ from output nets in that they can contain complex expressions directly in the body,
+// and cannot be re-connected.
 int Output
 {
     get { return a & ( b | c ); }
@@ -514,9 +516,9 @@ A property address can be used as a full register net if it has both accessors (
 A method represents a clocked action on a particular module. They can take a number of arguments of any type, which are nets by default, though both input and output nets are allowed. They can also return a value. There are four main categories of methods:
 
 ## Combinatorial
-This is the default type of method declared. All arguments must be nets, and the body can only contain combinational logic, so no registers or properties can be set, nor edge or async methods called. Register values can still be read, and other combinatorial methods can be caled.
+This is the default type of method declared. All arguments must be nets, and the body can only contain combinational logic, so no registers or properties can be set, nor edge or async methods called. Register values can still be read, and other combinatorial methods can be called.
 
-Note: Most combinatorial methods should be declared as ‘inline’, as a normal one will only allow one set of arguments. If there are no arguments, an inline declaration will have no effect.
+Methods of this class are implicitly inlined whenever more than one set of arguments is used.
 
 ```
 int val;
@@ -529,7 +531,7 @@ public int SomeBooleanExpression(int a, int b, int c)
 ```
 
 ## Macros
-A macro method is one that is computed in its entirety at compile time. It can only deal with meta types, but can include any control structures that do not result in an infinite loop. For obvious reasons, they cannot deal with any non-macro members. Macros are defined with the macro keyword, which is implicit if the return value is a meta-type (i.e. it is required for void-return functions). Macros have no limits on when they are called.
+A macro method is one that is computed in its entirety at compile time. It can only deal with meta types, but can include any control structures that do not result in an infinite loop. For obvious reasons, they cannot deal with any non-macro members. Macros are defined with the `macro` keyword, which is implicit if the return value is a meta-type (i.e. it is required for void-return functions). Macros have no limits on when they are called.
 
 ```
 module Array<T, INT L>
@@ -559,12 +561,10 @@ public edge int SetValues(int a, int b)
 }
 ```
 
-Edge methods can have the `inline` keyword applied to them to allow multiple calling points.
+Edge methods can have the `inline` keyword applied to them to allow multiple calling points. In this case, any registers that are set and other methods called within the method body will also need to be inline.
 
-## Asynchronous
-The ‘asynchronous’ designation and keyword `async` don’t refer to a lack of clocking - they are very much edge-triggered - but instead mean that these methods can take an arbitrary amount of time from when they are first called to when they return - if they ever return. The term is taken from software languages that start separate threads for these methods, and the analogy is reasonably accurate here.
-
-Async methods can include delays (not fixed time delays, but delays until a clock edge) in their body. Remember that arguments are not latched in by default unless `reg` is specified explicitly.
+## Asynchronous *TODO: Think of a better name for this?*
+Methods in this class  can take an arbitrary amount of time from when they are first called to when they return - if they ever return - by including delays (not fixed time delays, but delays until a clock edge) in their body. Remember that arguments are not latched in by default unless `reg` is specified explicitly.
 
 ```
 public async int Fibonacci(bit clk, reg int n) {
