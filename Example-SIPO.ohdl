@@ -1,0 +1,19 @@
+module SIPO<INT Size> // Define a Size template parameter to allow code re-use
+{
+    public bit Input; // Nets are input by default.
+    public bit Clk; // Public nets are exported
+    
+    // Auto-properties synthesise a register internally, and export public accessors.
+    // In this case the `get` accessor is public, so we're exporting one set of wires.
+    public bit[Size] Output { get; private set; }
+    
+    // When Clk goes from low to high...
+    event on(Clk) {
+        Output = (Output << 1) | Input; // Shift the existing data and put the input bit in the empty place
+    }
+}
+
+// Rather than naming our main module `Main`, we can use a `using` directive to specify it.
+// Public meta-type fields are exported as parameters
+public INT Size;
+using Main = SIPO<Size>;
