@@ -8,7 +8,9 @@ As a result, many hardware developers choose to, or are required to, eschew HLS 
 
 ## Relation to existing technologies
 
+Making digital design more accessible has long been the goal of many research projects. The most similar existing technologies I know of are [Chisel](https://chisel.eecs.berkeley.edu/), which uses the Scala language, and Kiwi (https://www.microsoft.com/en-us/research/project/kiwi/), which uses .NET languages. Both translate their respective inputs directly into hardware, rather than using a more complex HLS framework.
 
+The primary difference between these projects and my own is that they add hardware design libraries into existing software languages. While this can improve familiarity to software developers, the resultant code isn't as elegant as it could be with a purpose-designed language, in terms of the number of symbols required to type, and the understanding of how the code translates into hardware.
 
 ## My vision for the language is:
 
