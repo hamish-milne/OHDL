@@ -8,14 +8,15 @@ Let's write a program that will output the ASCII string "Hello world!" in binary
  * tells the compiler to use it as the top-level entity; the place we connect external
  * inputs and outputs to.
  * All the public members of a module will appear as wires in the design software.
+ * The `sysclk` keyword tells us that this module has a single 'system clock' which
+ * triggers all events and tasks in the module.
  */
-module Main
+module sysclk Main
 {
     /* Here we define a net, a wire that connects somewhere else in the design.
      * In this case it's `public`, meaning it connects outside the module.
      * The `bit` type is a single wire.
      */
-    public bit Clk;
     public bit Start;
     
     /* This is our output, declared as an auto-property.
@@ -27,7 +28,8 @@ module Main
     
     /* Here we define a method for serialising a character string into bits and writing out each bit.
      * `task` means that we can perform operations over several clock cycles.
-     * The argument type, `STRING`, is a 'meta-type' that will instruct the compiler to produce different logic.
+     * The argument type, `STRING`, is a 'meta-type' that will instruct the compiler to produce different logic
+     * depending on the value passed in.
      */
     task void WriteString(STRING str) {
         /* We want to access the individual bits of the string. The `raw` keyword lets us do that */
@@ -37,16 +39,18 @@ module Main
             /* Set the output register to the current bit */
             output = data[i];
             /* Wait for a clock cycle */
-            on(Clk);
+            await sysclk;
         }
     }
     
     /* An `event` is a module member that defines a response to a change in state
      * They can be named which allows additional actions to be added to them in a constructor,
-     * but it's not required. The `on` statement tells us the state change that triggers the action.
-     * In this case, when Start -> 1, the WriteString task is started with the given parameters.
+     * but it's not required.
+     * In this case, when Start == 1, the WriteString task is started with the given parameters.
      */
-    event on(Start) WriteString("Hello world!");
+    event (Start) WriteString("Hello world!");
 }
 ```
+
+## Inheritance and composition
 
