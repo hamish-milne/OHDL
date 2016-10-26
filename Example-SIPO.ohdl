@@ -1,14 +1,13 @@
-module SIPO<INT Size> // Define a Size template parameter to allow code re-use
+module sysclk SIPO<INT Size> // Define a Size template parameter to allow code re-use
 {
     public bit Input; // Nets are input by default.
-    public bit Clk; // Public nets are exported
     
     // Auto-properties synthesise a register internally, and export public accessors.
     // In this case the `get` accessor is public, so we're exporting one set of wires.
     public bit[Size] Output { get; private set; }
     
-    // When Clk goes from low to high...
-    event on(Clk) {
+    // When sysclk goes from low to high...
+    event (sysclk) {
         Output = (Output << 1) | Input; // Shift the existing data and put the input bit in the empty place
     }
 }
