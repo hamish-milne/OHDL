@@ -1,6 +1,8 @@
 
 ## Names
 
+OHDL names are always valid verilog names. Verilog also allows the dollar sign `$` so we can use this as a separator character and for internal/compiler generated members.
+
 ## Class
 
 ```
@@ -31,6 +33,19 @@ endmodule
 
 ```
 {reg|wire} [<field size>:0] <field name>;
+```
+
+## N-edge register
+
+```
+reg [N:0] <name>;
+assign out = ^<name>;
+
+<-- For each signal i
+wire [N:0] wire_i;
+assign wire_i = { <name>[0], ... in, ... <name>[N-1] };
+always @(posedge <signal i>) begin <name>[i] = ^wire_i;
+-->
 ```
 
 ## Events
