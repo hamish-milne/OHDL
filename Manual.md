@@ -52,5 +52,55 @@ module sysclk Main
 }
 ```
 
-## Inheritance and composition
+...
 
+
+## Tasks, await and async
+
+A task method can `await` in its method body for an edge, and call other tasks both synchronously and asynchronously.
+
+```
+task int Fibbonaci(reg int n) // The 'reg' keyword will latch in the argument
+{
+    reg int a = 1, b = 1;
+    while(n > 0) {
+        int c => a + b;
+        a = b;
+        b = c;
+        await sysclk;
+    }
+}
+
+task int MyTask(int addr)
+{
+    reg int word = ReadFromDram(addr); // This is a synchronous task call
+    var t = async ReadFromDram(addr + 1); // This is an asynchronous task call that returns a Task<int> structure
+    // Do some other operations
+    reg int word1 = t.Await(); // await t; int word1 => t.Result; would also work here
+    return word + word1;
+}
+```
+
+Synchronous calls are effectively inlined into the task, which is to say their states become part of a single overall state.
+
+Asynchronous calls must however create their own state. By default, each call will create a separate state object, however for efficiency a state name can be specified.
+
+```
+module MyModule
+{
+    reg stateof(MyTask) state1; // This is a module-local state
+    
+    static reg stateof(MyTask) state2; // Static states are 'global'
+    
+    // Since states are just registers, they can be re-used for different tasks, provided they're large enough
+    
+    task int MyTask(int addr)
+    {
+        reg int word = ReadFromDram(addr) state1; // This is a synchronous task call
+        var t = async ReadFromDram(addr + 1) state2; // This is an asynchronous task call that returns a Task<int> structure
+        // Do some other operations
+        reg int word1 = t.Await(); // await t; int word1 => t.Result; would also work here
+        return word + word1;
+    }
+}
+```
