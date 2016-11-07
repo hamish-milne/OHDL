@@ -23,10 +23,55 @@ parameter <Field name> = <Value> ;
 endmodule
 ```
 
+Test fragment:
+
+```
+// Input
+module Foo {
+  public int bar;
+  reg int baz;
+  
+  public float Bat => bar + baz;
+}
+using Main = Foo;
+
+// Output
+module Foo ( // Foo
+  bar,
+  Bat
+);
+input [31:0] bar;
+output [31:0] Bat;
+
+  reg [31:0] baz;
+
+  assign Bat = bar + baz;
+
+endmodule
+```
+  
 ## Inheritance
 
 ```
-<Base class module> base #(<parameters> (<arguments>);
+<Base class module> base #(<parameters>) (<arguments>);
+```
+
+Test fragment:
+
+```
+// Input
+module Foo { }
+module Bar : Foo { }
+
+// Output
+module Foo (
+);
+endmodule
+
+module Bar (
+);
+Foo base #() ();
+endmodule
 ```
 
 ## Fields
@@ -38,14 +83,58 @@ endmodule
 ## N-edge register
 
 ```
-reg [N:0] <name>;
-assign out = ^<name>;
+reg <size> ntrig$<name> [N-1:0];
+wire <name>;
+assign <name> = ^ntrig$<name>;
 
 <-- For each signal i
-wire [N:0] wire_i;
-assign wire_i = { <name>[0], ... in, ... <name>[N-1] };
-always @(posedge <signal i>) begin <name>[i] = ^wire_i;
+wire <size> wire_i [N-1:0];
+assign wire_i = { ntrig$<name>[0], ... <input i>, ... ntrig$<name>[N-1] };
+always @(posedge <signal i>) begin ntrig$<name>[i] = ^wire_i;
 -->
+```
+
+Test fragment:
+
+```
+// Input
+module Foo {
+  public bit clkA, clkB, clkC;
+  reg int count;
+  
+  event (clkA or clkB or clkC) => count++;
+}
+
+// Output
+module Foo (
+  clkA,
+  clkB,
+  clkC
+);
+input clkA;
+input clkB;
+input clkC;
+
+reg [31:0] ntrig$count [2:0];
+wire [31:0] count;
+assign count = ^ntrig$count;
+
+wire [31:0] $event0$count0;
+assign $event0$count0 = count + 1;
+
+wire [31:0] nwire_0$count [2:0];
+assign nwire_0$count = { $event0$count0, ntrig$count[1], ntrig$count[2] };
+always @(posedge clkA) begin ntrig$count[0] = ^nwire_0$count;
+
+wire [31:0] nwire_1$count [2:0];
+assign nwire_1$count = { ntrig$count[0], $event0$count0, ntrig$count[2] };
+always @(posedge clkB) begin ntrig$count[1] = ^nwire_1$count;
+
+wire [31:0] nwire_2$count [2:0];
+assign nwire_2$count = { ntrig$count[0], ntrig$count[1], $event0$count0 };
+always @(posedge clkC) begin ntrig$count[2] = ^nwire_2$count;
+
+endmodule
 ```
 
 ## Events
@@ -57,6 +146,37 @@ always @(posedge (<expression> == <value>))
 begin
   <event body>
 end
+```
+
+Test fragment:
+
+```
+// Input
+module Foo {
+  public bit clk;
+  reg int count1, count2;
+
+  event Bar(clk) => count1++;
+  event Baz(clk -> 0) => count2++;
+}
+
+// Output
+module Foo (
+  clk
+);
+input clk;
+
+always @(posedge clk)
+begin
+  count1++;
+end
+
+always @(negedge clk)
+begin
+  count2++;
+end
+
+endmodule
 ```
 
 ### System clock
