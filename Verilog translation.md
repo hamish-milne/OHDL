@@ -204,6 +204,46 @@ end
 
 Edge-triggered method bodies are inlined into their respective calling point blocks.
 
+
+Test fragment:
+
+```
+// Input
+sysclk module Foo
+{
+  reg int a;
+  
+  public edge void Bar() {
+    a *= 3;
+  }
+}
+
+// Output
+module Foo (
+  sysclk,
+  Bar$trigger
+);
+input sysclk;
+input Bar$trigger;
+
+reg [31:0] a;
+
+task Bar;
+begin
+  a *= 3;
+end
+
+always @(posedge sysclk)
+begin
+  if(Bar$trigger)
+  begin
+    Bar()
+  end
+end
+
+endmodule
+```
+
 ## Task methods
 
 ```
@@ -216,4 +256,18 @@ begin
 end
 ```
 
-### Async task calls
+### Sync/Async task calls
+
+
+Test fragment:
+
+```
+// Input
+sysclk module Foo {
+  
+  public bit ext_clk;
+  public bit ext_rw;
+  public int ext_word;
+  
+  task int Bar(reg int addr) {
+    
