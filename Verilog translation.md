@@ -102,7 +102,7 @@ module Foo {
   public bit clkA, clkB, clkC;
   reg int count;
   
-  event (clkA or clkB or clkC) => count++;
+  event (clkA -> 1 or clkB -> 1 or clkC -> 1) => count++;
 }
 
 // Output
@@ -156,7 +156,7 @@ module Foo {
   public bit clk;
   reg int count1, count2;
 
-  event Bar(clk) => count1++;
+  event Bar(clk -> 1) => count1++;
   event Baz(clk -> 0) => count2++;
 }
 
@@ -198,6 +198,29 @@ input <arguments>;
 begin
   <method body>
 end
+```
+
+Test fragment:
+
+```
+// Input
+module Foo {
+  public int Bar(int a, int b, int c) {
+    return (a*b) + c;
+  }
+}
+
+// Output
+module Foo (
+);
+
+function Bar;
+input a, b, c;
+begin
+  Bar = (a*b) + c;
+end
+
+endmodule
 ```
 
 ## Edge-triggered methods
@@ -265,9 +288,68 @@ Test fragment:
 // Input
 sysclk module Foo {
   
-  public bit ext_clk;
-  public bit ext_rw;
-  public int ext_word;
+  task int Bar(reg int b) {
+    reg int a = 0;
+    a += b;
+    await sysclk;
+    a *= 3;
+    await sysclk;
+    return a + 1;
+  }
   
-  task int Bar(reg int addr) {
-    
+  task int Baz() {
+    var t = async Bar(3);
+    reg int a = Bar(4);
+    reg int b = t.Await();
+    return a + b;
+  }
+}
+
+// Output
+
+module task$Foo$Bar (
+  b,
+  $return,
+  $trigger,
+  $done
+);
+input [31:0] b;
+output [31:0] $return;
+output $done
+
+reg $done;
+
+task Bar;
+begin
+  reg [31:0] a = 0;
+  a += b;
+  @(posedge sysclk);
+  a *= 3;
+  @(posedge sysclk);
+  $return = a + b;
+end
+
+always @(posedge $trigger)
+begin
+  $done = 0;
+  Bar()
+  $done = 1;
+end
+
+endmodule
+
+module Foo (
+);
+
+wire [31:0] state$0$b;
+wire [31:0] state$0$$return;
+wire state$0$$trigger;
+wire state$0$$done;
+task$Foo$Bar state$0(state$0$b, state$0$$return, state$0$$trigger, state$0$$done);
+
+
+
+task Baz
+
+endmodule
+```
