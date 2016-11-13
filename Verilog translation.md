@@ -255,6 +255,7 @@ task Bar;
 begin
   a *= 3;
 end
+endtask
 
 always @(posedge sysclk)
 begin
@@ -277,6 +278,7 @@ task <method name>;
 begin
   <method body>
 end
+endtask
 ```
 
 ### Sync/Async task calls
@@ -320,14 +322,16 @@ output $done
 reg $done;
 
 task Bar;
-begin
-  reg [31:0] a = 0;
+reg [31:0] a;
+begin // Can be separated into a header file
+  a = 0;
   a += b;
   @(posedge sysclk);
   a *= 3;
   @(posedge sysclk);
   $return = a + b;
 end
+endtask
 
 always @(posedge $trigger)
 begin
@@ -343,13 +347,82 @@ module Foo (
 
 wire [31:0] state$0$b;
 wire [31:0] state$0$$return;
-wire state$0$$trigger;
+reg state$0$$trigger;
 wire state$0$$done;
 task$Foo$Bar state$0(state$0$b, state$0$$return, state$0$$trigger, state$0$$done);
 
+task state$0$Await;
+output [31:0] $return;
+begin
+  state$0$$trigger = 0;
+  wait (state$0$$done);
+  $return = state$0$$return;
+end
+endtask
 
+task Bar;
+input [31:0] b;
+output [31:0] $return;
+reg [31:0] b;
+reg [31:0] a;
+begin
+  a = 0;
+  a += b;
+  @(posedge sysclk);
+  a *= 3;
+  @(posedge sysclk);
+  $return = a + b;
+end
+endtask
 
-task Baz
+task Baz;
+output [31:0] $return;
+reg [31:0] a;
+reg [31:0] b;
+begin
+  state$0$b = 3;
+  state$0$$trigger = 1;
+  Bar(4, a);
+  state$0$Await(b);
+  $return = a + b;
+end
+endtask
+
+endmodule
+```
+
+## For loop
+
+Test fragment:
+
+```
+// Input
+module Foo {
+  public bit start;
+  reg int a;
+  
+  event (start -> 1) {
+    for(int i = 0; i < 5; i++) {
+      a++
+    }
+  }
+}
+
+// Output
+module Foo (
+  start
+);
+input start;
+
+always @(posedge start)
+begin
+  reg [31:0] i = 0;
+  while(i < 5)
+  begin
+    a += 1;
+    i += 1;
+  end
+end
 
 endmodule
 ```
