@@ -37,11 +37,9 @@ using Main = Foo;
 
 // Output
 module Foo ( // Foo
-  bar,
-  Bat
+  input [31:0] bar,
+  output [31:0] Bat
 );
-input [31:0] bar;
-output [31:0] Bat;
 
   reg [31:0] baz;
 
@@ -107,13 +105,10 @@ module Foo {
 
 // Output
 module Foo (
-  clkA,
-  clkB,
-  clkC
+  input clkA,
+  input clkB,
+  input clkC
 );
-input clkA;
-input clkB;
-input clkC;
 
 reg [31:0] ntrig$count [2:0];
 wire [31:0] count;
@@ -166,13 +161,11 @@ module Foo (
 );
 input clk;
 
-always @(posedge clk)
-begin
+always @(posedge clk) begin
   count1++;
 end
 
-always @(negedge clk)
-begin
+always @(negedge clk) begin
   count2++;
 end
 
@@ -182,8 +175,7 @@ endmodule
 ### System clock
 
 ```
-always @(posedge sysclk)
-begin
+always @(posedge sysclk) begin
   if(<condition>) begin
     <event body>
   end
@@ -257,10 +249,8 @@ begin
 end
 endtask
 
-always @(posedge sysclk)
-begin
-  if(Bar$trigger)
-  begin
+always @(posedge sysclk) begin
+  if(Bar$trigger) begin
     Bar()
   end
 end
@@ -333,8 +323,7 @@ begin // Can be separated into a header file
 end
 endtask
 
-always @(posedge $trigger)
-begin
+always @(posedge $trigger) begin
   $done = 0;
   Bar()
   $done = 1;
@@ -361,9 +350,8 @@ end
 endtask
 
 task Bar;
-input [31:0] b;
+input reg [31:0] b;
 output [31:0] $return;
-reg [31:0] b;
 reg [31:0] a;
 begin
   a = 0;
@@ -410,15 +398,12 @@ module Foo {
 
 // Output
 module Foo (
-  start
+  input start
 );
-input start;
 
-always @(posedge start)
-begin
+always @(posedge start) begin
   reg [31:0] i = 0;
-  while(i < 5)
-  begin
+  while(i < 5) begin
     a += 1;
     i += 1;
   end
