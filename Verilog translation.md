@@ -81,7 +81,7 @@ endmodule
 
 ```
 // Input
-sysclk module Foo {
+module Foo {
 	public reg int Bar;
 }
 
@@ -115,7 +115,7 @@ always @(posedge <signal i>) begin ntrig$<name>[i] = ntrig$<name>[0] ^ ... <inpu
 
 
 // Input
-module Foo {
+async module Foo {
   public bit clkA, clkB, clkC;
   public int count {get; private set;}
   
@@ -160,7 +160,7 @@ Test fragment:
 
 ```
 // Input
-module Foo {
+async module Foo {
   public bit clk;
   reg int count1, count2;
 
@@ -236,7 +236,7 @@ Test fragment:
 
 ```
 // Input
-sysclk module Foo
+module Foo
 {
   reg int a;
   
@@ -275,7 +275,7 @@ Test fragment:
 
 ```
 // Input
-sysclk module Foo {
+module Foo {
   
   task int Bar(reg int b) {
     reg int a = 0;
@@ -296,81 +296,6 @@ sysclk module Foo {
 
 // Output
 
-module task$Foo$Bar (
-  input [31:0] b,
-  output [31:0] $return,
-  input $trigger,
-  output $done
-);
-
-  reg $done;
-
-  task Bar;
-  reg [31:0] a;
-  begin // Can be separated into a header file
-    a = 0;
-    a = a + b;
-    @(posedge sysclk);
-    a = a * 3;
-    @(posedge sysclk);
-    $return = a + b;
-  end
-  endtask
-
-  always @(posedge $trigger) begin
-    $done = 0;
-    Bar()
-    $done = 1;
-  end
-
-endmodule
-
-module Foo (
-);
-
-  wire [31:0] state$0$b;
-  wire [31:0] state$0$$return;
-  reg state$0$$trigger;
-  wire state$0$$done;
-  task$Foo$Bar state$0(state$0$b, state$0$$return, state$0$$trigger, state$0$$done);
-
-  task state$0$Await;
-  output [31:0] $return;
-  begin
-    state$0$$trigger = 0;
-    wait (state$0$$done);
-    $return = state$0$$return;
-  end
-  endtask
-
-  task Bar;
-  input reg [31:0] b;
-  output [31:0] $return;
-  reg [31:0] a;
-  begin
-    a = 0;
-    a = a + b;
-    @(posedge sysclk);
-    a = a * 3;
-    @(posedge sysclk);
-    $return = a + b;
-  end
-  endtask
-
-  task Baz;
-  output [31:0] $return;
-  reg [31:0] a;
-  reg [31:0] b;
-  begin
-    state$0$b = 3;
-    state$0$$trigger = 1;
-    Bar(4, a);
-    state$0$Await(b);
-    $return = a + b;
-  end
-  endtask
-
-endmodule
 ```
 
 ## For loop
@@ -379,7 +304,7 @@ Test fragment:
 
 ```
 // Input
-module Foo {
+async module Foo {
   public bit start;
   reg int a;
   
@@ -412,7 +337,7 @@ Test fragment:
 
 ```
 // Input
-module Foo {
+async module Foo {
 
 	public int a;
 	public int b => Bar(a);
@@ -458,7 +383,7 @@ end
 
 ```
 // Input
-sysclk module Memory<T, N>
+module Memory<T, N>
 {
 	const INT A = ceilog2(N);
 	private reg T[N] mem;
@@ -540,81 +465,4 @@ module Foo
 
 // Output
 
-module Foo$Pipe (
-	input [31:0] $input,
-	output [31:0] $output,
-	input clk
-);
-
-function Add;
-input [31:0] $input;
-begin
-	Add = $input + 3;
-end
-
-function Mul;
-input [31:0] $input;
-begin
-	Mul = $input * 5;
-end
-
-wire [31:0] Break$int$input;
-reg [31:0] Break$int$a;
-wire [31:0] Break$int$return;
-
-task Break$int;
-wire [31:0] b;
-begin
-	b = Break$int$a;
-	Break$int$a = $input;
-end
-endtask
-
-always @(posedge clk) begin
-	wire [31:0] Break$input = Add($input);
-	wire 
-end
-
-endmodule
-
-module Foo (
-  input [31:0] Pipe$input,
-  output [31:0] Pipe$output,
-  input Pipe$clk
-);
-
-function Add;
-input [31:0] $input;
-begin
-	Add = $input + 3;
-end
-
-function Mul;
-input [31:0] $input;
-begin
-	Mul = $input * 5;
-end
-
-task Break$int;
-input [31:0] $input;
-output [31:0] $return;
-reg [31:0] a;
-wire [31:0] b;
-begin
-	b = a;
-	a = input;
-	$return = b;
-end
-endtask
-
-task Pipe$pipeline;
-begin
-	wire [31:0] $input$Break$int$0 = Add(Pipe$input);
-	wire [31:0] $return$Break$int$0;
-	Break$int($input$Break$int$0, $return$Break$int$0);
-
-always @(posedge Pipe$clk) begin
-	
-	
-endmodule
 ```
